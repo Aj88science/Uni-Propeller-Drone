@@ -1,0 +1,64 @@
+#include <Wire.h>
+#include <Servo.h>
+#include <MPU6050.h>
+
+// Pin Definitions
+#define SERVO_PIN 3   // PWM Pin for Servo motor (D3)
+#define ESC_PIN 6     // PWM Pin for ESC/BLDC motor (D6)
+
+// MPU6050
+MPU6050 mpu;
+
+// Servo Object
+Servo servo;
+
+void setup() {
+    // Initialize Serial Communication
+    Serial.begin(9600);
+
+    // Initialize I2C communication for MPU6050
+    Wire.begin();
+    mpu.initialize();
+
+    // Check MPU6050 connection
+    if (mpu.testConnection()) {
+        Serial.println("MPU6050 connection successful");
+    } else {
+        Serial.println("MPU6050 connection failed");
+        while (1);
+    }
+
+    // Initialize Servo motor
+    servo.attach(SERVO_PIN);
+
+    // Initialize ESC (set to minimum throttle)
+    pinMode(ESC_PIN, OUTPUT);
+    analogWrite(ESC_PIN, 0);
+}
+
+void loop() {
+    // Variables for MPU6050 data
+    int16_t ax, ay, az;
+    int16_t gx, gy, gz;
+
+    // Read accelerometer and gyroscope values
+    mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+
+    // Print raw MPU6050 data (for debugging purposes)
+    Serial.print("Accel: "); Serial.print(ax); Serial.print(" "); Serial.print(ay); Serial.print(" "); Serial.print(az); Serial.print(" | ");
+    Serial.print("Gyro: "); Serial.print(gx); Serial.print(" "); Serial.print(gy); Serial.print(" "); Serial.print(gz); Serial.println();
+
+    // Process data (for example, to control the servo and ESC)
+    // For simplicity, assume ax is used for controlling the servo and gz for the ESC
+
+    // Map accelerometer X-axis data to servo angle (0-180 degrees)
+    int servoAngle = map(ax, -32768, 32767, 0, 180);
+    servo.write(servoAngle);
+
+    // Map gyroscope Z-axis data to ESC PWM signal (0-255)
+    int motorSpeed = map(gz, -32768, 32767, 0, 255);
+    analogWrite(ESC_PIN, motorSpeed);
+
+    // Short delay for stability
+    delay(100);
+}
